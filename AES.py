@@ -55,11 +55,10 @@ def strToBin(text: str) -> list:
   l = [ord(i) for i in text]
   return [str(bin(k)[2:]).zfill(8) for k in l]
 
-
 # TODO: Review this function
-def createMatrix(hexList: list) -> list:
+def createMatrix(hexList):
   matrix = []
-  for i in range(len(hexList)):
+  for i in range(16):
     byte = hexList[i]
     if i % 4 == 0:
       matrix.append([byte])
@@ -68,28 +67,93 @@ def createMatrix(hexList: list) -> list:
   return matrix
 
 
+def prepareAListOfMatrices(listOfHex):
+  while len(listOfHex) % 16 != 0:
+    listOfHex.append("0x00") 
+  listOfMatrix = []
+  ini = 0
+  # print(len(listOfHex) // 16)
+  for i in range(1, (len(listOfHex) // 16)+1):
+    listOfMatrix.append(createMatrix(listOfHex[ini:16*i+1]))
+    ini = 16*i
+  
+  return listOfMatrix
+
+def mul_by_02(num):
+  """The function multiplies by 2 in Galua space"""
+
+  if num < 0x80:
+    res = (num << 1)
+  else:
+    res = (num << 1) ^ 0x1b
+
+  return res % 0x100
+
+def mul_by_03(num):
+  """The function multiplies by 3 in Galua space
+  example: 0x03*num = (0x02 + 0x01)num = num*0x02 + num
+  Addition in Galua field is oparetion XOR
+  """
+  return (mul_by_02(num) ^ num)
+
+
+
 # def addRoundKey():
 
 def subBytes(hexadecimal: list) -> list:
   return [hex(subBox[hexToDecimal(i[0])][hexToDecimal(i[1])]) for i in hexadecimal]
 
-# def shiftRows():
+def shiftRows(m):
+  x = m[1].pop(0)
+  m[1].append(x)
 
-# def mixColumns():
+  x = m[2].pop(0)
+  m[2].append(x)
+  y = m[2].pop(0)
+  m[2].append(y)
+
+  x = m[3].pop(0)
+  m[3].append(x)
+  y= m[3].pop(0)
+  m[3].append(y)
+  z= m[3].pop(0)
+  m[3].append(z)
+
+  return m
+
+def mixColumns(matrix):
+  R = [[0x00 for k in range(4)] for i in range(4)]
+  for c in range(4):
+    
+    R[0][c] = mul_by_02(matrix[0][c]) ^ mul_by_03(matrix[1][c]) ^ matrix[2][c] ^ matrix[3][c]
+    R[1][c] = matrix[0][c] ^ mul_by_02(matrix[1][c]) ^ mul_by_03(matrix[2][c]) ^ matrix[3][c]
+    R[2][c] = matrix[0][c] ^ matrix[1][c] ^ mul_by_02(matrix[2][c]) ^ mul_by_03(matrix[3][c])
+    R[3][c] = mul_by_03(matrix[0][c]) ^ matrix[1][c] ^ matrix[2][c] ^ mul_by_02(matrix[3][c])
+
+  return R
+
 
 
 # to test
 def main():
-  hexList = [binToHex(i) for i in strToBin("Testando a criptografia AES")]
-  print(hexList)
+  hexList = [binToHex(i) for i in strToBin("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.")]
+  # print(hexList)
+  listOfMatrix = prepareAListOfMatrices(hexList)
 
-  hexadecimal = [l[2::] for l in hexList]
-  x = "".join(hexadecimal)
-  print(x)
-  y = binascii.unhexlify(x)
-  print(y)
+  for matrix in listOfMatrix:
+    print("\n")
+    for l in matrix:
+      for c in l:
+        print(c, end=" ")
+      print("\n")
+    print("\n")
+  # hexadecimal = [l[2::] for l in hexList]
+  # x = "".join(hexadecimal)
+  # print(x)
+  # y = binascii.unhexlify(x)
+  # print(y)
 
-  sub = subBytes(hexadecimal)
-  print(sub)
+  # sub = subBytes(hexadecimal)
+  # print(sub)
 
 main()
