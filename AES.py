@@ -1,4 +1,5 @@
 import binascii
+import random
 
 subBox = [
   [0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76],
@@ -38,6 +39,57 @@ invSubBox = [
   [0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0C, 0x7D],
 ]
 
+Rcon = [[0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36],
+        [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+        [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+        [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]]
+
+
+def encrypt(matrix, key):
+  state = addRoundKey(matrix, key)
+  keySchedule = keyExpansion(key)
+  for i in range(9):
+    state = subBytes(state)
+    state = shiftRows(state)
+    state = mixColumns(state)
+    state = addRoundKey(state, keySchedule[i])
+
+  state = subBytes(state)
+  state = shiftRows(state)
+  state = addRoundKey(state, keySchedule[9])
+  return state
+
+def addRoundKey(m, n):
+  return [[hex(int(m[i][j], 16) ^ int(n[i][j], 16)) for j in range(4)] for i in range(4)]
+
+def keyExpansion(key):
+  keySchedule = []
+  for k in range(10):
+    keyLastColumn = [key[0][3], key[1][3], key[2][3], key[3][3]]
+    x = keyLastColumn.pop(0)
+    keyLastColumn.append(x)
+    newKeyLastColumn = subBytes([keyLastColumn])
+    newKeyLastColumn = newKeyLastColumn[0]
+
+    newFirstColumn = [hex(int(key[0][0], 16) ^ int(newKeyLastColumn[0], 16) ^ Rcon[0][k]),
+                      hex(int(key[1][0], 16) ^ int(newKeyLastColumn[1], 16) ^ Rcon[1][k]),
+                      hex(int(key[2][0], 16) ^ int(newKeyLastColumn[2], 16) ^ Rcon[2][k]),
+                      hex(int(key[3][0], 16) ^ int(newKeyLastColumn[3], 16) ^ Rcon[3][k])]
+
+
+    newKey = [[newFirstColumn[0], 0x00, 0x00, 0x00], [newFirstColumn[1], 0x00, 0x00, 0x00], [newFirstColumn[2], 0x00, 0x00, 0x00], [newFirstColumn[3], 0x00, 0x00, 0x00]]
+
+    for i in range(1, 4):
+      newKey[0][i] = hex(int(newKey[0][i-1], 16) ^ int(key[0][i], 16))
+      newKey[1][i] = hex(int(newKey[1][i-1], 16) ^ int(key[1][i], 16))
+      newKey[2][i] = hex(int(newKey[2][i-1], 16) ^ int(key[2][i], 16))
+      newKey[3][i] = hex(int(newKey[3][i-1], 16) ^ int(key[3][i], 16))
+
+    key = newKey
+    keySchedule.append(key)
+
+  return keySchedule
+
 # conversions HexTo
 def hexToDecimal(valueInHex: str) -> int: 
   return int(valueInHex, 16)
@@ -55,7 +107,9 @@ def strToBin(text: str) -> list:
   l = [ord(i) for i in text]
   return [str(bin(k)[2:]).zfill(8) for k in l]
 
-# TODO: Review this function
+def genKey():
+  return [[hex(random.randrange(0, 255)) for c in range(4)] for i in range(4)]
+
 def createMatrix(hexList):
   matrix = []
   for i in range(16):
@@ -97,11 +151,15 @@ def mul_by_03(num):
   return (mul_by_02(num) ^ num)
 
 
-
-# def addRoundKey():
-
 def subBytes(hexadecimal: list) -> list:
-  return [hex(subBox[hexToDecimal(i[0])][hexToDecimal(i[1])]) for i in hexadecimal]
+  for i in range(len(hexadecimal)):
+    for j in range(len(hexadecimal[i])):
+      v = hexadecimal[i][j][2:]
+      if(len(v) == 1):
+        v = "0"+v
+      hexadecimal[i][j] = hex(subBox[hexToDecimal(v[0])][hexToDecimal(v[1])])
+
+  return hexadecimal
 
 def shiftRows(m):
   x = m[1].pop(0)
@@ -125,28 +183,50 @@ def mixColumns(matrix):
   R = [[0x00 for k in range(4)] for i in range(4)]
   for c in range(4):
     
-    R[0][c] = mul_by_02(matrix[0][c]) ^ mul_by_03(matrix[1][c]) ^ matrix[2][c] ^ matrix[3][c]
-    R[1][c] = matrix[0][c] ^ mul_by_02(matrix[1][c]) ^ mul_by_03(matrix[2][c]) ^ matrix[3][c]
-    R[2][c] = matrix[0][c] ^ matrix[1][c] ^ mul_by_02(matrix[2][c]) ^ mul_by_03(matrix[3][c])
-    R[3][c] = mul_by_03(matrix[0][c]) ^ matrix[1][c] ^ matrix[2][c] ^ mul_by_02(matrix[3][c])
+    R[0][c] = hex(mul_by_02(int(matrix[0][c], 16)) ^ mul_by_03(int(matrix[1][c], 16)) ^ int(matrix[2][c], 16) ^ int(matrix[3][c], 16))
+    R[1][c] = hex(int(matrix[0][c], 16) ^ mul_by_02(int(matrix[1][c], 16)) ^ mul_by_03(int(matrix[2][c], 16)) ^ int(matrix[3][c], 16))
+    R[2][c] = hex(int(matrix[0][c], 16) ^ int(matrix[1][c], 16) ^ mul_by_02(int(matrix[2][c], 16)) ^ mul_by_03(int(matrix[3][c], 16)))
+    R[3][c] = hex(mul_by_03(int(matrix[0][c], 16)) ^ int(matrix[1][c], 16) ^ int(matrix[2][c], 16) ^ mul_by_02(int(matrix[3][c], 16)))
 
   return R
 
 
 
+
+def options():
+  print("Você deseja criptografar ou descriptografar uma mensagem?")
+  print("Digite 1 para criptografar ou 2 para descriptografar ou 0 para encerrar o programa")
+  choice = input()
+  if (not (choice in ['0', '1', '2'])):
+    print("você precisa escolher uma função válida digitanto 0, 1 ou 2")
+    return options()
+  else:
+    return choice
+
+def keyRules(key):
+  if len(bin(key)) > 128:
+    print("escolha uma key menor")
+    key = input()
+    return keyRules(key)
+  else:
+    arrayKey = [hex(i) for i in key]
+    while len(arrayKey) % 16 != 0:
+      arrayKey.append("0x00")
+    return key
+
 # to test
 def main():
-  hexList = [binToHex(i) for i in strToBin("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.")]
+  hexList = [binToHex(i) for i in strToBin("Testando AES")]
   # print(hexList)
-  listOfMatrix = prepareAListOfMatrices(hexList)
+  # listOfMatrix = prepareAListOfMatrices(hexList)
 
-  for matrix in listOfMatrix:
-    print("\n")
-    for l in matrix:
-      for c in l:
-        print(c, end=" ")
-      print("\n")
-    print("\n")
+  # for matrix in listOfMatrix:
+  #   print("\n")
+  #   for l in matrix:
+  #     for c in l:
+  #       print(c, end=" ")
+  #     print("\n")
+    # print("\n")
   # hexadecimal = [l[2::] for l in hexList]
   # x = "".join(hexadecimal)
   # print(x)
@@ -155,5 +235,45 @@ def main():
 
   # sub = subBytes(hexadecimal)
   # print(sub)
+  # choice = ''
+
+  # while True:
+  #   choice = options()
+  #   if (choice == '0'):
+  #     break
+  #   elif (choice == '1'):
+  #     print("Você deseja que nós geramos a sua key?")
+  #     inp = input().lower()
+  #     if(inp == 's' or inp == "sim" or inp == 'y' or inp == "yes"):
+  #       key = genKey()
+  #       keyValue = ""
+  #       for i in key:
+  #         for j in i:
+  #           keyValue += j[2:]
+  #       print("your key is: ", keyValue)
+  #     else:
+  #       print("Digite a sua key")
+  #       value = input()
+  #       key = keyRules(value)
+  #     print("Digite aqui o texto que deseja criptografar")
+  #     # encrypt()
+  #     print("Você deseja salvar o texto criptografado?")
+
+  #   else: 
+      # decrypt()
+      # continue
+
+  key = [["0x2b", "0x28", "0xab", "0x09"],
+       ["0x7e", "0xae", "0xf7", "0xcf"],
+       ["0x15", "0xd2", "0x15", "0x4f"],
+       ["0x16", "0xa6", "0x88", "0x3c"]]
+
+  # for matrix in keyExpansion(key):
+  #   for l in matrix:
+  #     print(l)
+  #   print("\n")
+  # print(len(keyExpansion(key)))
+  phraseInBytes = prepareAListOfMatrices(hexList)
+  print(encrypt(phraseInBytes[0], key))
 
 main()
