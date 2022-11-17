@@ -1,4 +1,5 @@
 import random
+import re
 
 subBox = [
   [0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76],
@@ -266,103 +267,179 @@ def invMixColumn(matrix):
 
   return R
   
+
+
+'''
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  from now on they are just functions for a test system =)
+'''
+
+
 def options():
   print("Você deseja criptografar ou descriptografar uma mensagem?")
-  print("Digite 1 para criptografar ou 2 para descriptografar ou 0 para encerrar o programa")
+  print("Digite 1 para criptografar, 2 para descriptografar ou 0 para encerrar o programa")
   choice = input()
   if (not (choice in ['0', '1', '2'])):
-    print("você precisa escolher uma função válida digitanto 0, 1 ou 2")
+    print("Você precisa escolher uma função válida digitanto 0, 1 ou 2")
     return options()
   else:
     return choice
 
 def keyRules(key):
-  if len(bin(key)) > 128:
-    print("escolha uma key menor")
+  if len(key) > 16:
+    print("Entre com uma key menor: ")
     key = input()
     return keyRules(key)
   else:
-    arrayKey = [hex(i) for i in key]
+    for char in key:
+      if ord(char) > 0xff:
+        print("Cada caracter tem que ter no máximo 1 byte")
+        print("Entre com uma nova key: ")
+        key = input()
+        return keyRules(key)
+    arrayKey = [binToHex(i) for i in strToBin(key)]
     while len(arrayKey) % 16 != 0:
       arrayKey.append("0x00")
+    print(arrayKey)
     return key
 
+def textRules(text):
+  for char in text:
+    if ord(char) > 0xff:
+      print("Cada caracter tem que ter no máximo 1 byte")
+      print("Escolha uma nova mensagem a ser criptografada: ")
+      text = input()
+      return textRules(text)
+  return text
+
+def tryToCreateAFile(fileName):
+  try:
+    f = open(fileName+".bin", "x")
+    return f
+  except Exception as e:
+    print("Ocorreu um erro ao tentar criar um arquivo com esse nome")
+    print("O erro é: ", e)
+    print()
+    print("tente criar um arquivo com um nome diferente")
+    newFileName = input("Digite o nome do arquivo: ")
+    return tryToCreateAFile(newFileName)
+
+def tryToOpenAFile(fileName):
+  try:
+    f = open(fileName+".bin", "rb")
+    return f
+  except Exception as e:
+    print("Ocorreu um erro ao tentar ler um arquivo com esse nome")
+    print("Lembre-se que não precisa da extensão do arquivo, só é lido arquivos txt")
+    print("O erro é: ", e)
+    print()
+    print("tente criar um arquivo com um nome diferente")
+    newFileName = input("Digite o nome do arquivo: ")
+    return tryToOpenAFile(newFileName)
+
+def infoAboutTheKey(info):
+  if info not in ['1', '2']:
+    print("Você tentou uma opção inválida, tente novamente com um dos valores válidos: ")
+    info = input()
+    return infoAboutTheKey(info)
+  return info
 # to test
 def main():
   hexList = [binToHex(i) for i in strToBin("Testando AES AQUI NA SALA AO VIVO")]
-  # print(hexList)
-  # listOfMatrix = prepareAListOfMatrices(hexList)
 
-  # for matrix in listOfMatrix:
-  #   print("\n")
-  #   for l in matrix:
-  #     for c in l:
-  #       print(c, end=" ")
-  #     print("\n")
-    # print("\n")
-  # hexadecimal = [l[2::] for l in hexList]
-  # x = "".join(hexadecimal)
-  # print(x)
-  # y = binascii.unhexlify(x)
-  # print(y)
+  while True:
+    choice = options()
+    if (choice == '0'):
+      break
+    elif (choice == '1'):
+      print("Você deseja que nós geramos a sua key?")
+      inp = input().lower()
+      if(inp == 's' or inp == "sim" or inp == 'y' or inp == "yes"):
+        key = genKey()
+        keyValue = ""
+        for i in key:
+          for j in i:
+            keyValue += j
+        print()
+        print("A sua key é: ", keyValue)
+        print()
+      else:
+        print("Digite a sua key: ")
+        value = input()
+        key = createMatrix(keyRules(value))
+      print("Digite aqui o texto que deseja criptografar: ")
+      inputValue = input()
+      text = textRules(inputValue)
+      hexList = [binToHex(i) for i in strToBin(text)]
+      listOfBytesArray = prepareAListOfMatrices(hexList)
+      encryptedText = [encrypt(matrix, key) for matrix in listOfBytesArray]
+      cipher = ""
+      for i in range(len(encryptedText)):
+        for l in range(len(encryptedText[i])):
+          cipher += bin(int(encryptedText[i][l][0], 16))+" "
+          cipher += bin(int(encryptedText[i][l][1], 16))+" "
+          cipher += bin(int(encryptedText[i][l][2], 16))+" "
+          cipher += bin(int(encryptedText[i][l][3], 16))+" "
+      print()
+      print("Agora nessa estapa você deve informar o nome do aqruivo que salvará o texto encripado")
+      print()
+      print("O nome não deverá conter a extensão do arquivo, pois por padrão será txt")
+      fileName = input("Digite o nome do arquivo: ")
+      f = tryToCreateAFile(fileName)
+      f.write(cipher)
+      f.close()
 
-  # sub = subBytes(hexadecimal)
-  # print(sub)
-  # choice = ''
+      print()
+      print("Texto encryptado com sucesso =)")
+      print()
 
-  # while True:
-  #   choice = options()
-  #   if (choice == '0'):
-  #     break
-  #   elif (choice == '1'):
-  #     print("Você deseja que nós geramos a sua key?")
-  #     inp = input().lower()
-  #     if(inp == 's' or inp == "sim" or inp == 'y' or inp == "yes"):
-  #       key = genKey()
-  #       keyValue = ""
-  #       for i in key:
-  #         for j in i:
-  #           keyValue += j[2:]
-  #       print("your key is: ", keyValue)
-  #     else:
-  #       print("Digite a sua key")
-  #       value = input()
-  #       key = keyRules(value)
-  #     print("Digite aqui o texto que deseja criptografar")
-  #     # encrypt()
-  #     print("Você deseja salvar o texto criptografado?")
+    else: 
+      print("\nJá que deseja descriptografar a mensagem, é necessário antes se certificar de alguns passos.\n")
+      print("Passo 1: se certifique que o texto encriptado está em formato txt na mesma pasta do programa")
+      print("Passo 2: Você deve saber a key\n")
+      print("Tendo esses dois passos certo podemos começar o programa\n")
+      print("...")
+      print("\nantes de tudo precisamos saber se a key que vai ser informada foi gerada por nós.")
+      print("precisamos dessa informação pois se a resposta for afirmativa, então trataremos a entrada da key já em hexadecimal\n")
+      print("digite 1 para sim ou 2 para não")
+      value = input()
+      info = infoAboutTheKey(value)
+      print()
+      if info == '1':
+        key = input("digite a sua key: ")
+        key = key.split("0x")
+        keyInList = [hex(int(key[i], 16)) for i in range(1, len(key))]
+        print(keyInList)
+        key = createMatrix(keyInList)
+      else:
+        print("Digite a sua key: ")
+        value = input()
+        key = createMatrix(keyRules(value))
 
-  #   else: 
-      # decrypt()
-      # continue
+      print("Agora digite o nome do arquivo em que está o texto encriptado")
+      fileName = input()
+      f = tryToOpenAFile(fileName)
+      data = f.read().split()
+      # print(data)
+      hexList = [hex(int(i, 2)) for i in data]
+      # print(hexList)
+      listOfMatrices = prepareAListOfMatrices(hexList)
+      result = []
+      # print(listOfMatrices)
+      for matrix in listOfMatrices:
+        result.append(decrypt(matrix, key))
+      print(result)
+      message = ""
+      for i in range(len(result)):
+        for l in range(len(result[i])):
+          message += chr(int(result[i][l][0], 16))
+          message += chr(int(result[i][l][1], 16))
+          message += chr(int(result[i][l][2], 16))
+          message += chr(int(result[i][l][3], 16))
 
-  key = [["0x2b", "0x28", "0xab", "0x09"],
-       ["0x7e", "0xae", "0xf7", "0xcf"],
-       ["0x15", "0xd2", "0x15", "0x4f"],
-       ["0x16", "0xa6", "0x88", "0x3c"]]
-
-  # for matrix in keyExpansion(key):
-  #   for l in matrix:
-  #     print(l)
-  #   print("\n")
-  # print(len(keyExpansion(key)))
-  phraseInBytes = prepareAListOfMatrices(hexList)
-
-  # cipher = [["0x32", "0x88", "0x31", "0xe0"], ["0x43", "0x5a", "0x31", "0x37"], ["0xf6", "0x30", "0x98", "0x07"], ["0xa8", "0x8d", "0xa2", "0x34"]]
-  # encrypt(phraseInBytes, key)
-  cipher = []
-  for i in phraseInBytes:
-    cipher.append(encrypt(i, key))
-    for c in i:
-      print(c)
-    print()
-  
-  # print()
-  for k in cipher:
-    for j in decrypt(k, key):
-      # print(j)
-      for k in j:
-        print(chr(int(k, 16)), end="")
-
+      print()
+      print("A sua mensagem descriptografada é: ", message)
+      print()
+ 
 
 main()
