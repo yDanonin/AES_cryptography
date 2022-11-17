@@ -321,6 +321,8 @@ def infoAboutTheKey(info):
     info = input()
     return infoAboutTheKey(info)
   return info
+
+
 def main():
   while True:
     choice = options()
