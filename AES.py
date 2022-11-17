@@ -287,14 +287,14 @@ def options():
 
 def keyRules(key):
   if len(key) > 16:
-    print("Entre com uma key menor: ")
+    print("Entre com uma chave menor:")
     key = input()
     return keyRules(key)
   else:
     for char in key:
       if ord(char) > 0xff:
-        print("Cada caracter tem que ter no máximo 1 byte")
-        print("Entre com uma nova key: ")
+        print("Cada caracter tem que ter no máximo 1 byte!")
+        print("Entre com uma nova chave:")
         key = input()
         return keyRules(key)
     arrayKey = [binToHex(i) for i in strToBin(key)]
@@ -307,7 +307,7 @@ def textRules(text):
   for char in text:
     if ord(char) > 0xff:
       print("Cada caracter tem que ter no máximo 1 byte")
-      print("Escolha uma nova mensagem a ser criptografada: ")
+      print("Escolha uma nova mensagem a ser criptografada:")
       text = input()
       return textRules(text)
   return text
@@ -317,10 +317,9 @@ def tryToCreateAFile(fileName):
     f = open(fileName+".bin", "x")
     return f
   except Exception as e:
-    print("Ocorreu um erro ao tentar criar um arquivo com esse nome")
-    print("O erro é: ", e)
-    print()
-    print("tente criar um arquivo com um nome diferente")
+    print("Ocorreu um erro ao tentar criar um arquivo com esse nome.")
+    print("O erro é:", e)
+    print("\nTente criar um arquivo com um nome diferente!")
     newFileName = input("Digite o nome do arquivo: ")
     return tryToCreateAFile(newFileName)
 
@@ -329,30 +328,29 @@ def tryToOpenAFile(fileName):
     f = open(fileName+".bin", "rb")
     return f
   except Exception as e:
-    print("Ocorreu um erro ao tentar ler um arquivo com esse nome")
-    print("Lembre-se que não precisa da extensão do arquivo, só é lido arquivos txt")
-    print("O erro é: ", e)
-    print()
-    print("tente criar um arquivo com um nome diferente")
+    print("Ocorreu um erro ao tentar ler um arquivo com esse nome.")
+    print("Lembre-se que não precisa da extensão do arquivo, só são lidos arquivos .bin")
+    print("O erro é:", e)
+    print("\nTente criar um arquivo com um nome diferente")
     newFileName = input("Digite o nome do arquivo: ")
     return tryToOpenAFile(newFileName)
 
 def infoAboutTheKey(info):
   if info not in ['1', '2']:
-    print("Você tentou uma opção inválida, tente novamente com um dos valores válidos: ")
+    print("Você tentou uma opção inválida, tente novamente com um dos valores válidos:")
     info = input()
     return infoAboutTheKey(info)
   return info
 # to test
 def main():
-  hexList = [binToHex(i) for i in strToBin("Testando AES AQUI NA SALA AO VIVO")]
+  #hexList = [binToHex(i) for i in strToBin("Testando AES AQUI NA SALA AO VIVO")]
 
   while True:
     choice = options()
     if (choice == '0'):
       break
     elif (choice == '1'):
-      print("Você deseja que nós geramos a sua key?")
+      print("Você deseja que nós geremos a sua key? [Sim - Nao]")
       inp = input().lower()
       if(inp == 's' or inp == "sim" or inp == 'y' or inp == "yes"):
         key = genKey()
@@ -361,13 +359,13 @@ def main():
           for j in i:
             keyValue += j
         print()
-        print("A sua key é: ", keyValue)
+        print("A sua key é:", keyValue)
         print()
       else:
-        print("Digite a sua key: ")
+        print("Digite a sua key:")
         value = input()
         key = createMatrix(keyRules(value))
-      print("Digite aqui o texto que deseja criptografar: ")
+      print("Digite aqui o texto que deseja criptografar:")
       inputValue = input()
       text = textRules(inputValue)
       hexList = [binToHex(i) for i in strToBin(text)]
@@ -380,43 +378,39 @@ def main():
           cipher += bin(int(encryptedText[i][l][1], 16))+" "
           cipher += bin(int(encryptedText[i][l][2], 16))+" "
           cipher += bin(int(encryptedText[i][l][3], 16))+" "
-      print()
-      print("Agora nessa estapa você deve informar o nome do aqruivo que salvará o texto encripado")
-      print()
-      print("O nome não deverá conter a extensão do arquivo, pois por padrão será txt")
+      print("\nAgora nessa estapa você deve informar o nome do aqruivo que salvará o texto criptografado.")
+      print("\nO nome não deverá conter a extensão do arquivo, pois por padrão será .bin")
       fileName = input("Digite o nome do arquivo: ")
       f = tryToCreateAFile(fileName)
       f.write(cipher)
       f.close()
 
-      print()
-      print("Texto encryptado com sucesso =)")
-      print()
+      print("\nTexto criptografado com sucesso =)\n")
 
     else: 
       print("\nJá que deseja descriptografar a mensagem, é necessário antes se certificar de alguns passos.\n")
-      print("Passo 1: se certifique que o texto encriptado está em formato txt na mesma pasta do programa")
-      print("Passo 2: Você deve saber a key\n")
-      print("Tendo esses dois passos certo podemos começar o programa\n")
+      print("Passo 1: se certifique que o texto criptografado está em formato .bin na mesma pasta do programa")
+      print("Passo 2: Você deve saber a chave criptográfica\n")
+      print("Tendo esses dois passos certo podemos começar o programa.\n")
       print("...")
-      print("\nantes de tudo precisamos saber se a key que vai ser informada foi gerada por nós.")
-      print("precisamos dessa informação pois se a resposta for afirmativa, então trataremos a entrada da key já em hexadecimal\n")
-      print("digite 1 para sim ou 2 para não")
+      print("\nAntes de tudo precisamos saber se a chave que vai ser informada foi gerada por nós.")
+      print("Precisamos dessa informação pois se a resposta for afirmativa, então trataremos a entrada da key já em hexadecimal.\n")
+      print("Digite 1 para SIM ou 2 para NÃO")
       value = input()
       info = infoAboutTheKey(value)
       print()
       if info == '1':
-        key = input("digite a sua key: ")
+        key = input("Digite a sua chave: ")
         key = key.split("0x")
         keyInList = [hex(int(key[i], 16)) for i in range(1, len(key))]
         print(keyInList)
         key = createMatrix(keyInList)
       else:
-        print("Digite a sua key: ")
+        print("Digite a sua chave:")
         value = input()
         key = createMatrix(keyRules(value))
 
-      print("Agora digite o nome do arquivo em que está o texto encriptado")
+      print("Agora digite o nome do arquivo em que está o texto criptografado:")
       fileName = input()
       f = tryToOpenAFile(fileName)
       data = f.read().split()
@@ -428,7 +422,7 @@ def main():
       # print(listOfMatrices)
       for matrix in listOfMatrices:
         result.append(decrypt(matrix, key))
-      print(result)
+      #print(result)
       message = ""
       for i in range(len(result)):
         for l in range(len(result[i])):
@@ -437,9 +431,6 @@ def main():
           message += chr(int(result[i][l][2], 16))
           message += chr(int(result[i][l][3], 16))
 
-      print()
-      print("A sua mensagem descriptografada é: ", message)
-      print()
- 
+      print("\nA sua mensagem descriptografada é: {}\n".format(message))
 
 main()
