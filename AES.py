@@ -1,5 +1,4 @@
 import random
-import re
 
 subBox = [
   [0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76],
@@ -49,7 +48,6 @@ def encrypt(matrix, key):
   state = addRoundKey(matrix, key)
   keySchedule = keyExpansion(key)
 
-  # print(keySchedule)
   for i in range(9):
     state = subBytes(state)
     state = shiftRows(state)
@@ -109,18 +107,18 @@ def keyExpansion(key):
 
   return keySchedule
 
-# conversions HexTo
+# Conversions HexTo
 def hexToDecimal(valueInHex: str) -> int: 
   return int(valueInHex, 16)
 
 def hexToBin(valueInHex: str) -> str:
   return bin(int(valueInHex, 16))[2:]
 
-# conversions binTo
+# Conversions binTo
 def binToHex(valueInBin: int) -> str:
   return hex(int(valueInBin, 2))
 
-# conversions strTo
+# Conversions strTo
 # This function return an array of bytes
 def strToBin(text: str) -> list:
   l = [ord(i) for i in text]
@@ -145,15 +143,12 @@ def prepareAListOfMatrices(listOfHex):
     listOfHex.append("0x00") 
   listOfMatrix = []
   ini = 0
-  # print(len(listOfHex) // 16)
   for i in range(1, (len(listOfHex) // 16)+1):
     listOfMatrix.append(createMatrix(listOfHex[ini:16*i+1]))
     ini = 16*i
   
   return listOfMatrix
 
-
-# TODO: review this function 
 def mulBy02(num):
   if num < 0x80:
     res = (num << 1)
@@ -162,27 +157,21 @@ def mulBy02(num):
 
   return res % 0x100
 
-# TODO: review this function 
 def mulBy03(num):
   
   return (mulBy02(num) ^ num)
 
-# TODO: review this function 
 def mulBy09(num):
     return mulBy02(mulBy02(mulBy02(num))) ^ num
 
-# TODO: review this function 
 def mulBy0b(num):
     return mulBy02(mulBy02(mulBy02(num))) ^ mulBy02(num) ^ num
 
-# TODO: review this function 
 def mulBy0d(num):
     return mulBy02(mulBy02(mulBy02(num))) ^ mulBy02(mulBy02(num)) ^ num
 
-# TODO: review this function 
 def mulBy0e(num):
     return mulBy02(mulBy02(mulBy02(num))) ^ mulBy02(mulBy02(num)) ^ mulBy02(num)
-
 
 
 def subBytes(hexadecimal: list) -> list:
@@ -266,14 +255,6 @@ def invMixColumn(matrix):
     R[3][i] = hex(mulBy0b(int(matrix[0][i], 16)) ^ mulBy0d(int(matrix[1][i], 16)) ^ mulBy09(int(matrix[2][i], 16)) ^ mulBy0e(int(matrix[3][i], 16)))
 
   return R
-  
-
-
-'''
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! WARNING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  from now on they are just functions for a test system =)
-'''
-
 
 def options():
   print("Você deseja criptografar ou descriptografar uma mensagem?")
@@ -300,7 +281,6 @@ def keyRules(key):
     arrayKey = [binToHex(i) for i in strToBin(key)]
     while len(arrayKey) % 16 != 0:
       arrayKey.append("0x00")
-    #print(arrayKey)
     return key
 
 def textRules(text):
@@ -341,10 +321,7 @@ def infoAboutTheKey(info):
     info = input()
     return infoAboutTheKey(info)
   return info
-# to test
 def main():
-  #hexList = [binToHex(i) for i in strToBin("Testando AES AQUI NA SALA AO VIVO")]
-
   while True:
     choice = options()
     if (choice == '0'):
@@ -401,7 +378,6 @@ def main():
         key = input("Digite a sua chave: ")
         key = key.split("0x")
         keyInList = [hex(int(key[i], 16)) for i in range(1, len(key))]
-        #print(keyInList)
         key = createMatrix(keyInList)
       else:
         print("Digite a sua chave:")
@@ -412,15 +388,11 @@ def main():
       fileName = input()
       f = tryToOpenAFile(fileName)
       data = f.read().split()
-      # print(data)
       hexList = [hex(int(i, 2)) for i in data]
-      # print(hexList)
       listOfMatrices = prepareAListOfMatrices(hexList)
       result = []
-      # print(listOfMatrices)
       for matrix in listOfMatrices:
         result.append(decrypt(matrix, key))
-      #print(result)
       message = ""
       for i in range(len(result)):
         for l in range(len(result[i])):
