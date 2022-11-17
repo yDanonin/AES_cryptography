@@ -1,4 +1,3 @@
-import binascii
 import random
 
 subBox = [
@@ -48,6 +47,8 @@ Rcon = [[0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36],
 def encrypt(matrix, key):
   state = addRoundKey(matrix, key)
   keySchedule = keyExpansion(key)
+
+  # print(keySchedule)
   for i in range(9):
     state = subBytes(state)
     state = shiftRows(state)
@@ -57,6 +58,23 @@ def encrypt(matrix, key):
   state = subBytes(state)
   state = shiftRows(state)
   state = addRoundKey(state, keySchedule[9])
+  return state
+
+def decrypt(matrix, key):
+  keySchedule = keyExpansion(key)
+
+  state = addRoundKey(matrix, keySchedule[9])
+
+  for i in range(9):
+    state = invShiftRows(state)
+    state = invSubBytes(state)
+    state = addRoundKey(state, keySchedule[8-i])
+    state = invMixColumn(state)
+  
+  state = invShiftRows(state)
+  state = invSubBytes(state)
+  state = addRoundKey(state, key)
+
   return state
 
 def addRoundKey(m, n):
@@ -133,9 +151,9 @@ def prepareAListOfMatrices(listOfHex):
   
   return listOfMatrix
 
-def mul_by_02(num):
-  """The function multiplies by 2 in Galua space"""
 
+# TODO: review this function 
+def mulBy02(num):
   if num < 0x80:
     res = (num << 1)
   else:
@@ -143,12 +161,27 @@ def mul_by_02(num):
 
   return res % 0x100
 
-def mul_by_03(num):
-  """The function multiplies by 3 in Galua space
-  example: 0x03*num = (0x02 + 0x01)num = num*0x02 + num
-  Addition in Galua field is oparetion XOR
-  """
-  return (mul_by_02(num) ^ num)
+# TODO: review this function 
+def mulBy03(num):
+  
+  return (mulBy02(num) ^ num)
+
+# TODO: review this function 
+def mulBy09(num):
+    return mulBy02(mulBy02(mulBy02(num))) ^ num
+
+# TODO: review this function 
+def mulBy0b(num):
+    return mulBy02(mulBy02(mulBy02(num))) ^ mulBy02(num) ^ num
+
+# TODO: review this function 
+def mulBy0d(num):
+    return mulBy02(mulBy02(mulBy02(num))) ^ mulBy02(mulBy02(num)) ^ num
+
+# TODO: review this function 
+def mulBy0e(num):
+    return mulBy02(mulBy02(mulBy02(num))) ^ mulBy02(mulBy02(num)) ^ mulBy02(num)
+
 
 
 def subBytes(hexadecimal: list) -> list:
@@ -160,6 +193,7 @@ def subBytes(hexadecimal: list) -> list:
       hexadecimal[i][j] = hex(subBox[hexToDecimal(v[0])][hexToDecimal(v[1])])
 
   return hexadecimal
+
 
 def shiftRows(m):
   x = m[1].pop(0)
@@ -179,20 +213,59 @@ def shiftRows(m):
 
   return m
 
+
 def mixColumns(matrix):
   R = [[0x00 for k in range(4)] for i in range(4)]
   for c in range(4):
-    
-    R[0][c] = hex(mul_by_02(int(matrix[0][c], 16)) ^ mul_by_03(int(matrix[1][c], 16)) ^ int(matrix[2][c], 16) ^ int(matrix[3][c], 16))
-    R[1][c] = hex(int(matrix[0][c], 16) ^ mul_by_02(int(matrix[1][c], 16)) ^ mul_by_03(int(matrix[2][c], 16)) ^ int(matrix[3][c], 16))
-    R[2][c] = hex(int(matrix[0][c], 16) ^ int(matrix[1][c], 16) ^ mul_by_02(int(matrix[2][c], 16)) ^ mul_by_03(int(matrix[3][c], 16)))
-    R[3][c] = hex(mul_by_03(int(matrix[0][c], 16)) ^ int(matrix[1][c], 16) ^ int(matrix[2][c], 16) ^ mul_by_02(int(matrix[3][c], 16)))
+    R[0][c] = hex(mulBy02(int(matrix[0][c], 16)) ^ mulBy03(int(matrix[1][c], 16)) ^ int(matrix[2][c], 16) ^ int(matrix[3][c], 16))
+    R[1][c] = hex(int(matrix[0][c], 16) ^ mulBy02(int(matrix[1][c], 16)) ^ mulBy03(int(matrix[2][c], 16)) ^ int(matrix[3][c], 16))
+    R[2][c] = hex(int(matrix[0][c], 16) ^ int(matrix[1][c], 16) ^ mulBy02(int(matrix[2][c], 16)) ^ mulBy03(int(matrix[3][c], 16)))
+    R[3][c] = hex(mulBy03(int(matrix[0][c], 16)) ^ int(matrix[1][c], 16) ^ int(matrix[2][c], 16) ^ mulBy02(int(matrix[3][c], 16)))
 
   return R
 
 
+def invSubBytes(hexadecimal):
+  for i in range(len(hexadecimal)):
+    for j in range(len(hexadecimal[i])):
+      v = hexadecimal[i][j][2:]
+      if(len(v) == 1):
+        v = "0"+v
+      hexadecimal[i][j] = hex(invSubBox[hexToDecimal(v[0])][hexToDecimal(v[1])])
+
+  return hexadecimal
 
 
+def invShiftRows(m):
+  x = m[1].pop(3)
+  m[1].insert(0, x)
+
+  x = m[2].pop(3)
+  m[2].insert(0, x)
+  y = m[2].pop(3)
+  m[2].insert(0, y)
+
+  x = m[3].pop(3)
+  m[3].insert(0, x)
+  y= m[3].pop(3)
+  m[3].insert(0, y)
+  z= m[3].pop(3)
+  m[3].insert(0, z)
+
+  return m
+
+
+def invMixColumn(matrix):
+  R = [[0x00 for k in range(4)] for i in range(4)]
+
+  for i in range(4):
+    R[0][i] = hex(mulBy0e(int(matrix[0][i], 16)) ^ mulBy0b(int(matrix[1][i], 16)) ^ mulBy0d(int(matrix[2][i], 16)) ^ mulBy09(int(matrix[3][i], 16)))
+    R[1][i] = hex(mulBy09(int(matrix[0][i], 16)) ^ mulBy0e(int(matrix[1][i], 16)) ^ mulBy0b(int(matrix[2][i], 16)) ^ mulBy0d(int(matrix[3][i], 16)))
+    R[2][i] = hex(mulBy0d(int(matrix[0][i], 16)) ^ mulBy09(int(matrix[1][i], 16)) ^ mulBy0e(int(matrix[2][i], 16)) ^ mulBy0b(int(matrix[3][i], 16)))
+    R[3][i] = hex(mulBy0b(int(matrix[0][i], 16)) ^ mulBy0d(int(matrix[1][i], 16)) ^ mulBy09(int(matrix[2][i], 16)) ^ mulBy0e(int(matrix[3][i], 16)))
+
+  return R
+  
 def options():
   print("Você deseja criptografar ou descriptografar uma mensagem?")
   print("Digite 1 para criptografar ou 2 para descriptografar ou 0 para encerrar o programa")
@@ -216,7 +289,7 @@ def keyRules(key):
 
 # to test
 def main():
-  hexList = [binToHex(i) for i in strToBin("Testando AES")]
+  hexList = [binToHex(i) for i in strToBin("Testando AES AQUI NA SALA AO VIVO")]
   # print(hexList)
   # listOfMatrix = prepareAListOfMatrices(hexList)
 
@@ -274,6 +347,22 @@ def main():
   #   print("\n")
   # print(len(keyExpansion(key)))
   phraseInBytes = prepareAListOfMatrices(hexList)
-  print(encrypt(phraseInBytes[0], key))
+
+  # cipher = [["0x32", "0x88", "0x31", "0xe0"], ["0x43", "0x5a", "0x31", "0x37"], ["0xf6", "0x30", "0x98", "0x07"], ["0xa8", "0x8d", "0xa2", "0x34"]]
+  # encrypt(phraseInBytes, key)
+  cipher = []
+  for i in phraseInBytes:
+    cipher.append(encrypt(i, key))
+    for c in i:
+      print(c)
+    print()
+  
+  # print()
+  for k in cipher:
+    for j in decrypt(k, key):
+      # print(j)
+      for k in j:
+        print(chr(int(k, 16)), end="")
+
 
 main()
