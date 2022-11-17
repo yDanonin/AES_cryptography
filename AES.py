@@ -378,7 +378,7 @@ def main():
           cipher += bin(int(encryptedText[i][l][1], 16))+" "
           cipher += bin(int(encryptedText[i][l][2], 16))+" "
           cipher += bin(int(encryptedText[i][l][3], 16))+" "
-      print("\nAgora nessa estapa você deve informar o nome do aqruivo que salvará o texto criptografado.")
+      print("\nAgora nessa estapa você deve informar o nome do arquivo que salvará o texto criptografado.")
       print("\nO nome não deverá conter a extensão do arquivo, pois por padrão será .bin")
       fileName = input("Digite o nome do arquivo: ")
       f = tryToCreateAFile(fileName)
