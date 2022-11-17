@@ -300,7 +300,7 @@ def keyRules(key):
     arrayKey = [binToHex(i) for i in strToBin(key)]
     while len(arrayKey) % 16 != 0:
       arrayKey.append("0x00")
-    print(arrayKey)
+    #print(arrayKey)
     return key
 
 def textRules(text):
@@ -358,9 +358,7 @@ def main():
         for i in key:
           for j in i:
             keyValue += j
-        print()
-        print("A sua key é:", keyValue)
-        print()
+        print("\nA sua key é: {}\n".format(keyValue))
       else:
         print("Digite a sua key:")
         value = input()
@@ -403,7 +401,7 @@ def main():
         key = input("Digite a sua chave: ")
         key = key.split("0x")
         keyInList = [hex(int(key[i], 16)) for i in range(1, len(key))]
-        print(keyInList)
+        #print(keyInList)
         key = createMatrix(keyInList)
       else:
         print("Digite a sua chave:")
