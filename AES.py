@@ -281,7 +281,7 @@ def keyRules(key):
     arrayKey = [binToHex(i) for i in strToBin(key)]
     while len(arrayKey) % 16 != 0:
       arrayKey.append("0x00")
-    return key
+    return arrayKey
 
 def textRules(text):
   for char in text:
@@ -321,7 +321,6 @@ def infoAboutTheKey(info):
     info = input()
     return infoAboutTheKey(info)
   return info
-
 def main():
   while True:
     choice = options()
